@@ -1,0 +1,35 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "TFIAC Local",
+        "description": "Укажите параметры подключения к вашему кондиционеру TFIAC.",
+        "data": {
+          "host": "Хост / IP-адрес",
+          "name": "Название",
+          "temperature_unit": "Единица измерения для отображения",
+          "protocol_temperature_unit": "Единица измерения протокола",
+          "timeout": "Тайм-аут (секунды)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Не удалось подключиться к устройству.",
+      "invalid_unit": "Единица измерения должна быть C или F."
+    },
+    "abort": {
+      "already_configured": "Это устройство уже настроено.",
+      "cannot_connect": "Не удалось подключиться к устройству."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Параметры TFIAC Local",
+        "data": {
+          "scan_interval": "Интервал опроса (секунды)"
+        }
+      }
+    }
+  }
+}

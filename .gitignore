@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 .codex
+.pytest_cache/
+.venv/
+venv/

@@ -1,0 +1,35 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "TFIAC Local",
+        "description": "Enter the connection details for your TFIAC air conditioner.",
+        "data": {
+          "host": "Host / IP address",
+          "name": "Name",
+          "temperature_unit": "Display temperature unit",
+          "protocol_temperature_unit": "Protocol temperature unit",
+          "timeout": "Timeout (seconds)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the device.",
+      "invalid_unit": "Temperature unit must be C or F."
+    },
+    "abort": {
+      "already_configured": "This device is already configured.",
+      "cannot_connect": "Failed to connect to the device."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "TFIAC Local options",
+        "data": {
+          "scan_interval": "Polling interval (seconds)"
+        }
+      }
+    }
+  }
+}

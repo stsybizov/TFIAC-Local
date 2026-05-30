@@ -7,7 +7,12 @@ import socket
 from dataclasses import dataclass
 from time import time
 from typing import Any
-from xml.etree import ElementTree
+from xml.sax.saxutils import escape as xml_escape
+
+try:  # Home Assistant ships defusedxml; fall back only outside HA.
+    from defusedxml.ElementTree import fromstring as _xml_fromstring
+except ImportError:  # pragma: no cover - defensive fallback
+    from xml.etree.ElementTree import fromstring as _xml_fromstring
 
 from .const import DEFAULT_PORT
 
@@ -81,6 +86,26 @@ def _swing_to_flags(mode: str) -> tuple[str, str]:
     }[mode]
 
 
+def _ensure_ack(reply: bytes | str) -> None:
+    """Validate the device acknowledgement of a SetMessage.
+
+    The device answers a SetMessage with
+    ``<ACKSetMessage><Return>ok</Return></ACKSetMessage>``. Firmwares that do not
+    send an ACK node are tolerated; an explicit non-"ok" return is treated as a
+    rejection.
+    """
+    try:
+        root = _xml_fromstring(reply)
+    except Exception:  # noqa: BLE001 - unparseable reply, nothing to assert
+        return
+    ack = root.find("ACKSetMessage")
+    if ack is None:
+        return
+    result = (ack.findtext("Return") or "").strip().lower()
+    if result and result != "ok":
+        raise RuntimeError(f"Device rejected command: {result}")
+
+
 @dataclass(slots=True)
 class TfiacStatus:
     """Parsed device state."""
@@ -97,7 +122,7 @@ class TfiacStatus:
     @classmethod
     def from_xml(cls, xml_payload: bytes | str) -> "TfiacStatus":
         """Parse a status response."""
-        root = ElementTree.fromstring(xml_payload)
+        root = _xml_fromstring(xml_payload)
         status_node = root.find("statusUpdateMsg")
         if status_node is None:
             raise ValueError("Missing statusUpdateMsg in device response")
@@ -208,16 +233,36 @@ class TfiacClient:
         raw["WindDirection_V"] = vertical
 
         payload = (
-            f"<TurnOn>{raw['TurnOn']}</TurnOn>"
-            f"<BaseMode>{raw['BaseMode']}</BaseMode>"
-            f"<SetTemp>{raw['SetTemp']}</SetTemp>"
-            f"<WindSpeed>{raw['WindSpeed']}</WindSpeed>"
-            f"<WindDirection_H>{raw['WindDirection_H']}</WindDirection_H>"
-            f"<WindDirection_V>{raw['WindDirection_V']}</WindDirection_V>"
+            f"<TurnOn>{xml_escape(raw['TurnOn'])}</TurnOn>"
+            f"<BaseMode>{xml_escape(raw['BaseMode'])}</BaseMode>"
+            f"<SetTemp>{xml_escape(raw['SetTemp'])}</SetTemp>"
+            f"<WindSpeed>{xml_escape(raw['WindSpeed'])}</WindSpeed>"
+            f"<WindDirection_H>{xml_escape(raw['WindDirection_H'])}</WindDirection_H>"
+            f"<WindDirection_V>{xml_escape(raw['WindDirection_V'])}</WindDirection_V>"
         )
 
-        await self._send(SET_MESSAGE.format(seq=self.seq, message=payload))
-        return await self.async_update(force=True)
+        reply = await self._send(SET_MESSAGE.format(seq=self.seq, message=payload))
+        _ensure_ack(reply)
+
+        # The device acknowledges a SetMessage immediately, but its status
+        # response lags a few seconds behind, so reading it back right away
+        # returns the previous state. Apply an optimistic status from the values
+        # we just sent; the next coordinator poll reconciles with the device.
+        optimistic = TfiacStatus(
+            device_name=status.device_name,
+            is_on=raw["TurnOn"] == "on",
+            base_mode=raw["BaseMode"],
+            target_temp=float(raw["SetTemp"]),
+            current_temp=status.current_temp,
+            fan_mode=raw["WindSpeed"],
+            swing_mode=_wind_flags_to_swing(
+                raw["WindDirection_H"], raw["WindDirection_V"]
+            ),
+            raw=raw,
+        )
+        self._status = optimistic
+        self._last_update = time()
+        return optimistic
 
     async def async_turn_off(self) -> TfiacStatus:
         """Turn the AC off."""
@@ -261,7 +306,9 @@ class TfiacClient:
                         loop.sock_recvfrom(sock, 4096),
                         remaining,
                     )
-                except TimeoutError:
+                except (asyncio.TimeoutError, TimeoutError):
+                    # asyncio.wait_for raises asyncio.TimeoutError on Python
+                    # < 3.11; it is an alias of the builtin from 3.11 on.
                     break
 
                 if host in seen_hosts:
