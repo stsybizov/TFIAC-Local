@@ -1,12 +1,12 @@
 {
   "domain": "tfiac_local",
   "name": "TFIAC Local",
+  "codeowners": ["@stsybizov"],
   "config_flow": true,
-  "integration_type": "device",
   "documentation": "https://github.com/stsybizov/TFIAC-Local",
-  "issue_tracker": "https://github.com/stsybizov/TFIAC-Local/issues",
-  "version": "0.2.1",
+  "integration_type": "device",
   "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/stsybizov/TFIAC-Local/issues",
   "requirements": ["defusedxml>=0.7.1"],
-  "codeowners": ["@stsybizov"]
+  "version": "0.2.2"
 }

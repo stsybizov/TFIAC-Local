@@ -5,7 +5,7 @@
 # TFIAC Local for Home Assistant
 
 [![hacs](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
-![version](https://img.shields.io/badge/version-0.2.1-blue.svg)
+![version](https://img.shields.io/badge/version-0.2.2-blue.svg)
 ![license](https://img.shields.io/badge/license-MIT-green.svg)
 
 Local replacement for the removed Home Assistant `tfiac` integration. It talks directly to the AC over UDP port `7777`, based on the protocol used by `pytfiac`. Set up entirely from the UI (config flow), no Intelligent AC cloud account required.
