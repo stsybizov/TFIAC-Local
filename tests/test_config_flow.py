@@ -1,19 +1,19 @@
 """Tests for the TFIAC Local config flow.
 
-Requires pytest-homeassistant-custom-component (see requirements_test.txt).
+Requires pytest-homeassistant (see requirements_test.txt).
 Run on a Python version supported by Home Assistant (3.12/3.13).
 """
 
 import pytest
 
-pytest.importorskip("pytest_homeassistant_custom_component")
+pytest.importorskip("pytest_homeassistant")
 
 from unittest.mock import AsyncMock, patch  # noqa: E402
 
 from homeassistant import config_entries  # noqa: E402
 from homeassistant.const import CONF_HOST, CONF_NAME  # noqa: E402
 from homeassistant.data_entry_flow import FlowResultType  # noqa: E402
-from pytest_homeassistant_custom_component.common import MockConfigEntry  # noqa: E402
+from pytest_homeassistant.common import MockConfigEntry  # noqa: E402
 
 from custom_components.tfiac_local.const import (  # noqa: E402
     CONF_DISPLAY_UNIT,

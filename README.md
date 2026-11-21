@@ -5,7 +5,7 @@
 # TFIAC Local for Home Assistant
 
 [![hacs](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
-![version](https://img.shields.io/badge/version-0.2.2-blue.svg)
+![version](https://img.shields.io/badge/version-0.3.0-blue.svg)
 ![license](https://img.shields.io/badge/license-MIT-green.svg)
 
 Local replacement for the removed Home Assistant `tfiac` integration. It talks directly to the AC over UDP port `7777`, based on the protocol used by `pytfiac`. Set up entirely from the UI (config flow), no Intelligent AC cloud account required.
@@ -39,7 +39,10 @@ This integration is set up from the Home Assistant UI:
 3. Enter:
    - **Host / IP address** — the IP of the AC on your LAN.
    - **Name** — the entity/device name.
-   - **Display temperature unit** — what Home Assistant should show (C/F).
+   - **Display temperature unit** — the entity's native unit (C/F): it sets
+     the min/max range, the 1° setpoint step and rounding. Since Home Assistant
+     2026.11 the unit *shown* in the UI always follows your HA unit system
+     (Settings → System → General); HA converts automatically.
    - **Protocol temperature unit** — what the AC expects on the wire. Start with
      `F`, because that matches the historical `pytfiac` code; if the setpoint
      behaves incorrectly, switch it to `C`.
@@ -122,8 +125,10 @@ Two layers of tests live in `tests/`:
 
 - **`test_config_flow.py`, `test_init.py`, `test_climate.py`** — Home Assistant
   integration tests (config/options flow, setup/unload, entity behaviour). They
-  require the HA test harness and a Python version supported by Home Assistant
-  (3.12/3.13):
+  require Home Assistant's own test package `pytest-homeassistant` (released
+  in lockstep with HA; it replaced `pytest-homeassistant-custom-component`),
+  Python >= 3.14.2 and Linux/macOS/WSL. HA core does not import on native
+  Windows:
 
   ```bash
   pip install -r requirements_test.txt

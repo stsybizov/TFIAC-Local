@@ -1,6 +1,6 @@
 """Shared pytest configuration.
 
-The Home-Assistant-based tests need ``pytest-homeassistant-custom-component``.
+The Home-Assistant-based tests need ``pytest-homeassistant`` (auto-loaded plugin).
 When that plugin is not installed (e.g. running only the standalone transport
 tests on an unsupported Python version), we degrade gracefully so the rest of
 the suite still runs.
@@ -9,20 +9,14 @@ the suite still runs.
 import pytest
 
 try:
-    import pytest_homeassistant_custom_component  # noqa: F401
+    import pytest_homeassistant  # noqa: F401
 
-    pytest_plugins = ["pytest_homeassistant_custom_component"]
     _HAS_HA = True
 except ImportError:  # pragma: no cover - depends on the environment
     _HAS_HA = False
 
 
 if _HAS_HA:
-
-    @pytest.fixture(autouse=True)
-    def auto_enable_custom_integrations(enable_custom_integrations):
-        """Enable loading the custom integration in every HA test."""
-        yield
 
     @pytest.fixture
     def make_status():

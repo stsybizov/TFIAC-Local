@@ -169,8 +169,8 @@ class TfiacClimateEntity(CoordinatorEntity[TfiacCoordinator], ClimateEntity):
         self.async_write_ha_state()
 
     @property
-    def temperature_unit(self) -> str:
-        """Return the unit used by Home Assistant."""
+    def native_temperature_unit(self) -> str:
+        """Return the native unit; HA converts it to the system unit for display."""
         return self._display_unit
 
     @property
@@ -183,14 +183,14 @@ class TfiacClimateEntity(CoordinatorEntity[TfiacCoordinator], ClimateEntity):
         return PROTOCOL_TO_HVAC.get(self._status.base_mode, HVACMode.AUTO)
 
     @property
-    def current_temperature(self) -> float | None:
+    def native_current_temperature(self) -> float | None:
         """Return the current measured temperature."""
         if self._status is None or self._status.current_temp is None:
             return None
         return round(self._convert_from_protocol(self._status.current_temp), 1)
 
     @property
-    def target_temperature(self) -> float | None:
+    def native_target_temperature(self) -> float | None:
         """Return the target temperature."""
         if self._status is None:
             return None
@@ -207,7 +207,11 @@ class TfiacClimateEntity(CoordinatorEntity[TfiacCoordinator], ClimateEntity):
         return None if self._status is None else self._status.swing_mode
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
-        """Set the target temperature."""
+        """Set the target temperature.
+
+        The climate.set_temperature service already converted the value from
+        the HA system unit to native_temperature_unit (= the display unit).
+        """
         if ATTR_TEMPERATURE not in kwargs:
             return
         target = self._convert_to_protocol(float(kwargs[ATTR_TEMPERATURE]))

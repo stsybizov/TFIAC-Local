@@ -1,3 +1,5 @@
-# Test dependencies. Install on a Python version supported by Home Assistant
-# (3.12 or 3.13 as of 2026). This pulls in homeassistant, pytest, pytest-asyncio.
-pytest-homeassistant-custom-component
+# Test dependencies. pytest-homeassistant is released by Home Assistant core in
+# lockstep with HA itself (it pins homeassistant==<same version>); upgrade both
+# together. Requires Python >= 3.14.2 and a POSIX OS (HA core does not import on
+# native Windows; use WSL or CI).
+pytest-homeassistant==2026.11.2

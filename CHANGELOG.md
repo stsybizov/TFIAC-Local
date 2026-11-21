@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-11-21
+
+### Changed
+- Migrated the climate entity to the Home Assistant 2026.11 native temperature
+  API (`native_temperature_unit`, `native_current_temperature`,
+  `native_target_temperature`). Removes the deprecation warning logged by
+  HA 2026.11+ (the old names stop working in 2027.11).
+- **Requires Home Assistant 2026.11.0 or newer.**
+- The unit shown in Home Assistant now always follows the HA unit system. The
+  *Display temperature unit* option is kept; it now defines the entity's
+  native unit (min/max range, 1° setpoint step, rounding).
+- Tests now use Home Assistant's `pytest-homeassistant` (2026.11.2) instead of
+  the discontinued `pytest-homeassistant-custom-component`.
+
 ## [0.2.2] - 2026-05-31
 
 ### Added

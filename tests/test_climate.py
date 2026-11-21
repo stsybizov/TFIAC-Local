@@ -2,7 +2,7 @@
 
 import pytest
 
-pytest.importorskip("pytest_homeassistant_custom_component")
+pytest.importorskip("pytest_homeassistant")
 
 from unittest.mock import AsyncMock, patch  # noqa: E402
 
@@ -20,7 +20,7 @@ from homeassistant.const import (  # noqa: E402
     CONF_NAME,
     SERVICE_TURN_OFF,
 )
-from pytest_homeassistant_custom_component.common import MockConfigEntry  # noqa: E402
+from pytest_homeassistant.common import MockConfigEntry  # noqa: E402
 
 from custom_components.tfiac_local.const import (  # noqa: E402
     CONF_DISPLAY_UNIT,
@@ -124,3 +124,56 @@ async def test_turn_off_calls_client(hass, make_status):
         )
 
     offmock.assert_awaited_once()
+
+
+async def test_no_deprecated_temperature_api_warning(hass, make_status, caplog):
+    """The entity uses the native_* temperature API (HA 2026.11+)."""
+    await _setup(hass, make_status)
+    assert "native_temperature_unit" not in caplog.text
+    assert "deprecated" not in caplog.text.lower()
+
+
+@pytest.mark.parametrize(
+    ("display_unit", "system", "requested", "expected_protocol", "shown_target"),
+    [
+        # Native C, HA metric: 24 C -> 75 F on the wire.
+        ("C", "metric", 24, 75, 22.2),
+        # Native C, HA imperial: 75 F -> 23.9 C native -> 75 F on the wire.
+        ("C", "imperial", 75, 75, 72),
+        # Native F, HA metric: 24 C -> 75.2 F native -> 75 F on the wire.
+        ("F", "metric", 24, 75, 22.2),
+        # Native F, HA imperial: 75 F passes straight through.
+        ("F", "imperial", 75, 75, 72),
+    ],
+)
+async def test_set_temperature_in_system_unit(
+    hass, make_status, display_unit, system, requested, expected_protocol, shown_target
+):
+    """climate.set_temperature in the HA system unit reaches the device correctly."""
+    from homeassistant.util.unit_system import METRIC_SYSTEM, US_CUSTOMARY_SYSTEM
+
+    hass.config.units = METRIC_SYSTEM if system == "metric" else US_CUSTOMARY_SYSTEM
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="tfiac_ac",
+        data={**DATA, CONF_DISPLAY_UNIT: display_unit},
+    )
+    entry.add_to_hass(hass)
+    with patch(CLIENT_UPDATE, new=AsyncMock(return_value=make_status(target_temp=72.0))):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    # 72 F on the device is shown in the system unit.
+    assert hass.states.get(ENTITY).attributes[ATTR_TEMPERATURE] == pytest.approx(
+        shown_target, abs=0.1
+    )
+
+    setmock = AsyncMock(return_value=make_status(target_temp=75.0))
+    with patch(CLIENT_SET, new=setmock):
+        await hass.services.async_call(
+            CLIMATE_DOMAIN,
+            SERVICE_SET_TEMPERATURE,
+            {ATTR_ENTITY_ID: ENTITY, ATTR_TEMPERATURE: requested},
+            blocking=True,
+        )
+    assert setmock.await_args.kwargs["target_temp"] == expected_protocol
